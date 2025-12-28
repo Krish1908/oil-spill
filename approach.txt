@@ -1,0 +1,75 @@
+🎯 CLEAR WORKFLOW APPROACH FOR YOUR PROJECT
+This is the final, clean, professional workflow that will go into your documentation + PPT.
+
+🚀 FULL WORKFLOW — AI OIL SPILL DETECTION SYSTEM
+PHASE 1 — DATA ACQUISITION
+Collect satellite sea images (Sentinel-1, NOAA, MODIS, Kaggle dataset).
+Collect or create segmentation masks for each oil spill image.
+Organize dataset into train / val / test.
+
+PHASE 2 — DATA PREPROCESSING
+(You completed this for sample images — now apply to full dataset)
+For all images:
+Resize to 256×256
+Normalize to [0,1]
+Remove speckle noise (SAR filtering)
+Apply augmentations:
+Flip, rotate, zoom, brightness/contrast
+Additional preprocessing for segmentation:
+Ensure mask shape matches image
+Convert mask to binary (0/1)
+Remove blurred/noisy labels
+
+PHASE 3 — CNN MODEL DEVELOPMENT (Classification)
+Purpose: Detect whether spill exists.
+Steps:
+Build CNN (Conv → ReLU → Pool → FC).
+Train with labeled images: spill / no spill.
+Output:
+Prediction: “Oil Spill / No Oil Spill”
+Confidence: e.g., 92%
+
+PHASE 4 — U-NET MODEL DEVELOPMENT (Segmentation)
+Purpose: Highlight exact oil spill area.
+Steps:
+Build U-Net architecture.
+Train using images + masks.
+Output:
+Segmentation mask
+Overlaid visualization
+Metrics: IoU, Dice, Precision, Recall.
+
+PHASE 5 — MODEL EVALUATION
+For CNN:
+Accuracy
+Precision
+Recall
+AUC
+For U-Net:
+IoU
+Dice Coefficient
+Loss curves
+Visual comparisons (GT vs Prediction)
+
+PHASE 6 — RESULT VISUALIZATION
+Show:
+Original → Mask → Predicted Mask
+Overlay mask
+Classification probability
+
+PHASE 7 — STREAMLIT DEPLOYMENT
+User workflow:
+User uploads an image.
+CNN checks → Oil Spill or Not.
+If Oil Spill → U-Net segmentation mask displayed.
+App shows:
+Percentage confidence
+Highlighted spill region
+
+PHASE 8 — DOCUMENTATION + PRESENTATION
+Problem statement
+Dataset explanation
+Model architecture diagrams
+Performance charts
+Final app screenshots
+Conclusion & future enhancements

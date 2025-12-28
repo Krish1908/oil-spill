@@ -1,0 +1,25 @@
+# Datasets
+/dataset_1/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Artifacts / outputs
+/artifacts/
+
+# Model files (VERY IMPORTANT)
+*.keras
+*.h5
+
+# Plots
+*.png
+*.npy
+
+# Virtual environment (if any)
+venv/
+.env/
+
+# OS / Editor
+.DS_Store
+.vscode/
