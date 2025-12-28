@@ -1,4 +1,4 @@
-# /content/drive/MyDrive/Infosys 6.0/src/data/dataloader.py
+# Infosys 6.0/new/src/data/dataloader.py
 
 import os
 import numpy as np
@@ -7,7 +7,7 @@ import tensorflow as tf
 # ---------------------------------------------------
 # ABSOLUTE PATH FOR PROCESSED DATASET (Google Drive)
 # ---------------------------------------------------
-PROCESSED_DIR = "/content/drive/MyDrive/Infosys 6.0/src/data/processed"
+PROCESSED_DIR = "D:\Coding\Infosys 6.0\new\src\data\processed"
 IMG_SIZE = (256, 256)
 
 

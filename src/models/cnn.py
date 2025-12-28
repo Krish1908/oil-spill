@@ -1,4 +1,4 @@
-#/content/drive/MyDrive/Infosys 6.0/src/models/cnn.py
+# Infosys 6.0/new/src/models/cnn.py
 
 import tensorflow as tf
 from tensorflow.keras import layers, models

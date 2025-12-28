@@ -1,4 +1,4 @@
-# /content/drive/MyDrive/Infosys 6.0/src/testing/test_unet.py
+# Infosys 6.0/new/src/testing/test_unet.py
 
 import os
 import sys
@@ -12,7 +12,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 # ---------------------------------------------------
 # ADD PROJECT ROOT
 # ---------------------------------------------------
-PROJECT_ROOT = "/content/drive/MyDrive/Infosys 6.0/src"
+PROJECT_ROOT = "Infosys 6.0/new/src"
 if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
@@ -24,11 +24,11 @@ from models.unet import dice_coef
 # ---------------------------------------------------
 # PATHS
 # ---------------------------------------------------
-MODEL_PATH = "/content/drive/MyDrive/Infosys 6.0/models/unet_model.keras"
-TEST_IMAGE_DIR = "/content/drive/MyDrive/Infosys 6.0/dataset_1/test/images"
-TEST_MASK_DIR = "/content/drive/MyDrive/Infosys 6.0/dataset_1/test/masks"
+MODEL_PATH = "Infosys 6.0/new/models/unet_model.keras"
+TEST_IMAGE_DIR = "Infosys 6.0/new/dataset_1/test/images"
+TEST_MASK_DIR = "Infosys 6.0/new/dataset_1/test/masks"
 
-SAVE_DIR = "/content/drive/MyDrive/Infosys 6.0/models/unet_test_results"
+SAVE_DIR = "Infosys 6.0/new/models/unet_test_results"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 IMG_SIZE = 256

@@ -1,4 +1,4 @@
-# /content/drive/MyDrive/Infosys 6.0/src/training/train_cnn.py
+# Infosys 6.0/new/src/training/train_cnn.py
 
 import os
 import sys
@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 # ---------------------------------------------------
 # ADD PROJECT ROOT TO PYTHON PATH
 # ---------------------------------------------------
-PROJECT_ROOT = "/content/drive/MyDrive/Infosys 6.0/src"
+PROJECT_ROOT = "Infosys 6.0/new/src"
 if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
@@ -21,7 +21,7 @@ from models.cnn import build_cnn_model
 BATCH_SIZE = 16
 EPOCHS = 40
 
-MODEL_DIR = "/content/drive/MyDrive/Infosys 6.0/models"
+MODEL_DIR = "Infosys 6.0/new/models"
 MODEL_SAVE_PATH = f"{MODEL_DIR}/cnn_classifier.keras"
 PLOT_SAVE_PATH = f"{MODEL_DIR}/cnn_training_plot.png"
 

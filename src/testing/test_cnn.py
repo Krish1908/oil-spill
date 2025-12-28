@@ -1,4 +1,4 @@
-# /content/drive/MyDrive/Infosys 6.0/src/testing/test_cnn.py
+# Infosys 6.0/new/src/testing/test_cnn.py
 
 import os
 import sys
@@ -11,13 +11,13 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 # ---------------------------------------------------
 # PATH SETUP
 # ---------------------------------------------------
-PROJECT_ROOT = "/content/drive/MyDrive/Infosys 6.0/src"
+PROJECT_ROOT = "Infosys 6.0/new/src"
 sys.path.append(PROJECT_ROOT)
 
-TEST_IMG_DIR = "/content/drive/MyDrive/Infosys 6.0/src/data/processed/test/images"
-TEST_MASK_DIR = "/content/drive/MyDrive/Infosys 6.0/src/data/processed/test/masks"
-MODEL_PATH = "/content/drive/MyDrive/Infosys 6.0/models/cnn_classifier.keras"
-SAVE_DIR = "/content/drive/MyDrive/Infosys 6.0/models/cnn_test_results"
+TEST_IMG_DIR = "Infosys 6.0/new/src/data/processed/test/images"
+TEST_MASK_DIR = "Infosys 6.0/new/src/data/processed/test/masks"
+MODEL_PATH = "Infosys 6.0/new/models/cnn_classifier.keras"
+SAVE_DIR = "Infosys 6.0/new/models/cnn_test_results"
 
 os.makedirs(SAVE_DIR, exist_ok=True)
 

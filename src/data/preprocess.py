@@ -1,4 +1,4 @@
-# /content/drive/MyDrive/Infosys 6.0/src/data/preprocess.py
+#/Infosys 6.0/new/src/data/preprocess.py
 
 import os
 import cv2
@@ -10,10 +10,10 @@ from tqdm import tqdm
 # ---------------------------------------------------
 
 # Original dataset location (already given by you)
-INPUT_DIR = "/content/drive/MyDrive/Infosys 6.0/dataset_1"
+INPUT_DIR = "D:\Coding\Infosys 6.0\new\dataset_1"
 
 # New processed dataset save location (your request)
-OUTPUT_DIR = "/content/drive/MyDrive/Infosys 6.0/src/data/processed"
+OUTPUT_DIR = "D:\Coding\Infosys 6.0\new\src\data\processed"
 
 IMG_SIZE = (256, 256)   # Resize for CNN + U-Net
 
