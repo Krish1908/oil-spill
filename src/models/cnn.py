@@ -40,5 +40,3 @@ def build_cnn_model(input_shape=(256, 256, 3)):
 if __name__ == "__main__":
     model = build_cnn_model()
     model.summary()
-
-hi

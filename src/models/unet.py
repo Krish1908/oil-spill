@@ -77,5 +77,3 @@ def build_unet(input_shape=(256, 256, 3)):
 if __name__ == "__main__":
     model = build_unet()
     model.summary()
-
-hi
