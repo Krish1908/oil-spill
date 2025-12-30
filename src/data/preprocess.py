@@ -43,7 +43,7 @@ def preprocess_mask(mask):
     mask = cv2.resize(mask, IMG_SIZE, interpolation=cv2.INTER_NEAREST)
 
     # Normalize to [0,1] — DO NOT binarize
-    mask = mask.astype(np.float32) / 255.0
+    mask = mask.astype(np.uint8)   # preserve class labels
     return mask
 
 
@@ -86,8 +86,9 @@ def process_split(split):
         mask = preprocess_mask(mask)
 
         # CNN label based on OIL AREA RATIO (FIXED)
-        oil_ratio = np.sum(mask > 0.1) / mask.size
-        label = 1 if oil_ratio > 0.02 else 0   # ≥2% oil → oil image
+#        oil_ratio = np.sum(mask > 0.1) / mask.size
+#        label = 1 if oil_ratio > 0.02 else 0   # ≥2% oil → oil image
+        label = 1 if np.any(mask > 0) else 0
 
         # Save individual files
         np.save(os.path.join(img_output_dir, base_name + ".npy"), img)
