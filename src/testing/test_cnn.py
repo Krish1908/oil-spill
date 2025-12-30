@@ -1,4 +1,4 @@
-# Infosys 6.0/new/src/testing/test_cnn.py
+# /content/drive/MyDrive/Infosys 6.0/src/testing/test_cnn.py
 
 import os
 import sys
@@ -11,13 +11,13 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 # ---------------------------------------------------
 # PATH SETUP
 # ---------------------------------------------------
-PROJECT_ROOT = "Infosys 6.0/new/src"
+PROJECT_ROOT = "/content/drive/MyDrive/Infosys 6.0/src"
 sys.path.append(PROJECT_ROOT)
 
-TEST_IMG_DIR = "Infosys 6.0/new/src/data/processed/test/images"
-TEST_MASK_DIR = "Infosys 6.0/new/src/data/processed/test/masks"
-MODEL_PATH = "Infosys 6.0/new/models/cnn_classifier.keras"
-SAVE_DIR = "Infosys 6.0/new/models/cnn_test_results"
+TEST_IMG_DIR = "/content/drive/MyDrive/Infosys 6.0/src/data/processed/test/images"
+TEST_MASK_DIR = "/content/drive/MyDrive/Infosys 6.0/src/data/processed/test/masks"
+MODEL_PATH = "/content/drive/MyDrive/Infosys 6.0/models/cnn_classifier.keras"
+SAVE_DIR = "/content/drive/MyDrive/Infosys 6.0/models/cnn_test_results"
 
 os.makedirs(SAVE_DIR, exist_ok=True)
 
@@ -38,7 +38,10 @@ def load_test_data():
         img = load_npy(os.path.join(TEST_IMG_DIR, f))
         mask = load_npy(os.path.join(TEST_MASK_DIR, f))
 
-        label = 1 if np.count_nonzero(mask) > 500 else 0
+        WATER_CLASS = 174  # same value used during training
+
+        non_water_ratio = np.sum(mask != WATER_CLASS) / mask.size
+        label = 1 if non_water_ratio > 0.05 else 0
 
         X_test.append(img)
         y_test.append(label)
