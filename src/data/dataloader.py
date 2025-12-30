@@ -1,4 +1,4 @@
-# Infosys 6.0/new/src/data/dataloader.py
+# /content/drive/MyDrive/Infosys 6.0/src/data/dataloader.py
 
 import os
 import numpy as np
@@ -7,9 +7,8 @@ import tensorflow as tf
 # ---------------------------------------------------
 # ABSOLUTE PATH FOR PROCESSED DATASET (Google Drive)
 # ---------------------------------------------------
-PROCESSED_DIR = "D:\Coding\Infosys 6.0\new\src\data\processed"
+PROCESSED_DIR = "/content/drive/MyDrive/Infosys 6.0/src/data/processed"
 IMG_SIZE = (256, 256)
-
 
 # ---------------------------------------------------
 # Helper: load npy file
@@ -17,15 +16,18 @@ IMG_SIZE = (256, 256)
 def load_npy(path):
     return np.load(path)
 
-
 # ---------------------------------------------------
 # CNN Dataset (Classification)
 # ---------------------------------------------------
 def create_cnn_dataset(split, batch_size=16, augment=False):
     """
     Returns tf.data.Dataset of (image, label)
-    Label = 1 if oil spill exists else 0
+
+    Label definition:
+    0 → Mostly water (normal marine scene)
+    1 → Significant non-water presence (ships / land / structures)
     """
+
     img_dir = os.path.join(PROCESSED_DIR, split, "images")
     mask_dir = os.path.join(PROCESSED_DIR, split, "masks")
 
@@ -38,7 +40,12 @@ def create_cnn_dataset(split, batch_size=16, augment=False):
         img = load_npy(img_path.numpy().decode())
         mask = load_npy(mask_path.numpy().decode())
 
-        label = 1 if mask.sum() > 0 else 0
+        # 🔑 IMPORTANT: WATER CLASS ID (verify once visually)
+        WATER_CLASS = 174   # change ONLY if your mask visualization proves otherwise
+
+        non_water_ratio = np.sum(mask != WATER_CLASS) / mask.size
+        label = 1 if non_water_ratio > 0.05 else 0
+
         return img.astype("float32"), np.array(label, dtype="float32")
 
     def tf_wrapper(img_path, mask_path):
@@ -60,8 +67,9 @@ def create_cnn_dataset(split, batch_size=16, augment=False):
     dataset = dataset.shuffle(500).batch(batch_size).prefetch(tf.data.AUTOTUNE)
     return dataset
 
-
+# ---------------------------------------------------
 # CNN Augmentation
+# ---------------------------------------------------
 def augment_cnn(img, label):
     img = tf.image.random_flip_left_right(img)
     img = tf.image.random_flip_up_down(img)
@@ -69,9 +77,8 @@ def augment_cnn(img, label):
     img = tf.image.random_contrast(img, 0.8, 1.2)
     return img, label
 
-
 # ---------------------------------------------------
-# U-Net Dataset (Segmentation)
+# U-Net Dataset (UNCHANGED — handled later)
 # ---------------------------------------------------
 def create_unet_dataset(split, batch_size=8, augment=False):
     """
@@ -111,8 +118,9 @@ def create_unet_dataset(split, batch_size=8, augment=False):
     dataset = dataset.shuffle(500).batch(batch_size).prefetch(tf.data.AUTOTUNE)
     return dataset
 
-
+# ---------------------------------------------------
 # U-Net Augmentation
+# ---------------------------------------------------
 def augment_unet(img, mask):
     img = tf.image.random_flip_left_right(img)
     mask = tf.image.random_flip_left_right(mask)
@@ -122,7 +130,6 @@ def augment_unet(img, mask):
 
     return img, mask
 
-
 # ---------------------------------------------------
 # Debug Test
 # ---------------------------------------------------
@@ -130,7 +137,7 @@ if __name__ == "__main__":
     print("Testing CNN dataloader...")
     train_cnn = create_cnn_dataset("train", augment=True)
     for img, label in train_cnn.take(1):
-        print("CNN batch:", img.shape, label.shape)
+        print("CNN batch:", img.shape, label.numpy())
 
     print("\nTesting UNET dataloader...")
     train_unet = create_unet_dataset("train", augment=True)
