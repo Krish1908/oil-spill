@@ -1,5 +1,5 @@
 # D:\Coding\Infosys 6.0\new\src\app.py
-# IMPORPER OVERLAY & UI ENHANCED — LOGIC UNCHANGED
+# UI ENHANCED — MODEL & OVERLAY LOGIC UNCHANGED
 
 import streamlit as st
 import numpy as np
@@ -88,38 +88,35 @@ st.markdown("<p style='text-align:center;color:gray'>CNN → Detection | U-Net �
 
 timestamp = datetime.now().strftime("%d-%m-%Y %H:%M:%S IST")
 st.caption(f"⏰ Analysis Timestamp: {timestamp}")
-
 st.divider()
 
 # =================================================
 # SIDEBAR (RETRACTABLE)
 # =================================================
 with st.sidebar:
-    st.header("⚙️ Detection Parameters")
+    st.header("🧭 System Configuration")
 
-    st.markdown("**Classification Stage (CNN)**")
-    st.metric("Oil Detection Threshold", CNN_THRESHOLD)
-
-    st.markdown("---")
-
-    st.markdown("**Segmentation Stage (U-Net)**")
+    st.subheader("Detection Thresholds")
+    st.metric("CNN Threshold", CNN_THRESHOLD)
     st.metric("Segmentation Threshold", UNET_THRESHOLD)
-    st.metric("Minimum Oil Region Area", MIN_AREA)
+    st.metric("Minimum Oil Area", MIN_AREA)
 
-    st.markdown("---")
+    st.divider()
 
-    st.markdown("**Legend**")
+    st.subheader("Legend")
     st.markdown("""
+    - ⬜ **White** → Oil Spill Region  
+    - ⬛ **Black** → Clean Water / No Oil  
     - 🟥 **Red Overlay** → Detected Oil Spill  
-    - ⬜ **White** → Oil Region  
-    - ⬛ **Black** → Non-Oil / Clean Water  
     """)
-
 
 # =================================================
 # MAIN UI
 # =================================================
-uploaded_file = st.file_uploader("Upload SAR / Satellite Image", type=["jpg","png","jpeg"])
+uploaded_file = st.file_uploader(
+    "Upload SAR / Satellite Image",
+    type=["jpg", "png", "jpeg"]
+)
 
 if uploaded_file:
     bytes_data = np.frombuffer(uploaded_file.read(), np.uint8)
@@ -137,7 +134,7 @@ if uploaded_file:
         st.success("✅ No Oil Spill Detected")
         st.stop()
 
-    st.warning("🚨 Oil Spill Detected")
+    st.warning("🚨 Oil Spill Detected — Running Segmentation")
 
     pred_prob = unet_model.predict(img_batch, verbose=0)[0].squeeze()
     final_mask = postprocess_mask(pred_prob, img_rgb)
@@ -147,69 +144,73 @@ if uploaded_file:
     water_percent = 100 - oil_percent
 
     # =================================================
-    # PIE CHART
+    # SMALL PIE CHART (OIL SPILL AREA)
     # =================================================
-    fig, ax = plt.subplots(figsize=(4,4))
+    fig, ax = plt.subplots(figsize=(4, 4))
     ax.pie(
-    [oil_percent, 100 - oil_percent],
-    labels=["Oil Spill Area", "Clean Water Area"],
-    autopct="%1.1f%%",
-    colors=["#ff4d4d", "#4CAF50"],
-    explode=(0.08, 0),
-    startangle=90,
-    textprops={"fontsize": 9}
+        [oil_percent, water_percent],
+        labels=["Oil Spill", "Clean Water"],
+        autopct="%1.1f%%",
+        colors=["#ff4d4d", "#4CAF50"],
+        explode=(0.08, 0),
+        startangle=90,
+        textprops={"fontsize": 9}
     )
     ax.set_title("Oil Spill Area Distribution", fontsize=11)
     ax.axis("equal")
-
-
-
     st.pyplot(fig)
     plt.close(fig)
 
-
     # =================================================
-    # VISUAL OUTPUT
+    # VISUAL RESULTS
     # =================================================
     col1, col2, col3 = st.columns(3)
-
-    col1.image(img_rgb, caption="Original")
-    col2.image(final_mask * 255, clamp=True, caption="Mask (White=Oil)")
-    col3.image(overlay, caption="Overlay (Red=Oil)")
+    col1.image(img_rgb, caption="Original Image")
+    col2.image(final_mask * 255, clamp=True, caption="Mask (White = Oil)")
+    col3.image(overlay, caption="Overlay (Red = Oil)")
 
     # =================================================
-    # CREATE DOWNLOAD IMAGE (MERGED)
+    # DOWNLOAD IMAGE (OVERLAY + PIE + TIMESTAMP)
     # =================================================
-    overlay_bgr = cv2.cvtColor(overlay, cv2.COLOR_RGB2BGR)
+    fig_dl = plt.figure(figsize=(8, 4))
 
-    cv2.putText(
-        overlay_bgr,
+    ax1 = fig_dl.add_subplot(1, 2, 1)
+    ax1.imshow(overlay)
+    ax1.set_title("Oil Spill Overlay")
+    ax1.axis("off")
+
+    ax2 = fig_dl.add_subplot(1, 2, 2)
+    ax2.pie(
+        [oil_percent, water_percent],
+        labels=["Oil Spill", "Clean Water"],
+        autopct="%1.1f%%",
+        colors=["#ff4d4d", "#4CAF50"],
+        explode=(0.08, 0),
+        startangle=90,
+        textprops={"fontsize": 9}
+    )
+    ax2.set_title("Oil Spill Distribution", fontsize=10)
+    ax2.text(
+        0.5, -0.15,
         f"Timestamp: {timestamp}",
-        (10, 25),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.6,
-        (255,255,255),
-        2
+        ha="center",
+        va="center",
+        fontsize=8,
+        transform=ax2.transAxes
     )
 
-    cv2.putText(
-        overlay_bgr,
-        "White=Oil | Black=No Oil | Red=Oil Region",
-        (10, IMG_SIZE - 10),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.5,
-        (255,255,255),
-        1
-    )
+    fig_dl.tight_layout()
+    buf = io.BytesIO()
+    fig_dl.savefig(buf, format="png", dpi=150, bbox_inches="tight")
+    plt.close(fig_dl)
+    buf.seek(0)
 
-    buf_overlay = io.BytesIO()
-    _, enc = cv2.imencode(".png", overlay_bgr)
-    buf_overlay.write(enc)
+    safe_ts = timestamp.replace(":", "-").replace(" ", "_")
 
     st.download_button(
-        "⬇️ Download Overlay (with timestamp & legend)",
-        buf_overlay.getvalue(),
-        file_name="oil_spill_result.png",
+        "⬇️ Download Analysis Result",
+        data=buf.getvalue(),
+        file_name=f"oil_spill_analysis_{safe_ts}.png",
         mime="image/png"
     )
 
