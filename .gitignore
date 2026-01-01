@@ -26,3 +26,6 @@ venv/
 
 *.zip
 .zip
+
+be.py
+app.py
