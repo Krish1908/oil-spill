@@ -76,9 +76,31 @@ def postprocess_mask(pred_prob, image_rgb):
 
 def create_overlay(image_rgb, mask, alpha=0.4):
     image = cv2.resize(image_rgb, (IMG_SIZE, IMG_SIZE))
+
+    # Red overlay
     overlay = image.copy()
     overlay[mask == 1] = [255, 0, 0]
-    return cv2.addWeighted(image, 1 - alpha, overlay, alpha, 0)
+    blended = cv2.addWeighted(image, 1 - alpha, overlay, alpha, 0)
+
+    # 🔑 Extract contours from oil mask
+    mask_uint8 = (mask * 255).astype(np.uint8)
+    contours, _ = cv2.findContours(
+        mask_uint8,
+        cv2.RETR_EXTERNAL,
+        cv2.CHAIN_APPROX_SIMPLE
+    )
+
+    # 🖤 Draw black outline
+    cv2.drawContours(
+        blended,
+        contours,
+        -1,
+        color=(0, 0, 0),   # black outline
+        thickness=2
+    )
+
+    return blended
+
 
 # =================================================
 # HEADER
