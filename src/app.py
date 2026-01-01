@@ -112,16 +112,41 @@ timestamp = datetime.now().strftime("%d-%m-%Y %H:%M:%S IST")
 st.caption(f"⏰ Analysis Timestamp: {timestamp}")
 st.divider()
 
+
 # =================================================
 # SIDEBAR (RETRACTABLE)
 # =================================================
+
+st.markdown("""
+<style>
+/* Compact sidebar text */
+.sidebar-compact h4 {
+    font-size: 0.95rem;
+    margin-bottom: 0.2rem;
+}
+
+.sidebar-compact p {
+    font-size: 0.85rem;
+    margin: 0.1rem 0;
+    opacity: 0.9;
+}
+
+.sidebar-divider {
+    margin: 0.6rem 0;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 with st.sidebar:
     st.header("🧭 System Configuration")
 
-    st.subheader("Detection Thresholds")
-    st.metric("CNN Threshold", CNN_THRESHOLD)
-    st.metric("Segmentation Threshold", UNET_THRESHOLD)
-    st.metric("Minimum Oil Area", MIN_AREA)
+    st.markdown("<div class='sidebar-compact'>", unsafe_allow_html=True)
+
+    st.markdown("#### Detection Thresholds")
+    st.markdown(f"<p><b>CNN Threshold</b>: {CNN_THRESHOLD}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p><b>Segmentation Threshold</b>: {UNET_THRESHOLD}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p><b>Minimum Oil Area</b>: {MIN_AREA} pixels</p>", unsafe_allow_html=True)
 
     st.divider()
 
