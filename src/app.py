@@ -282,4 +282,3 @@ if uploaded_file:
     )
 
 st.divider()
-st.caption("© AI-Driven Oil Spill Monitoring System")
