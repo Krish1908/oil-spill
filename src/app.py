@@ -1,5 +1,5 @@
 # D:\Coding\Infosys 6.0\new\src\app.py
-# minor imprefections
+# minor imperfections (LAND–WATER MASK ADDED ONLY)
 
 import streamlit as st
 import numpy as np
@@ -15,8 +15,8 @@ CNN_MODEL_PATH = r"D:\Coding\Infosys 6.0\new\models\cnn_classifier.keras"
 UNET_MODEL_PATH = r"D:\Coding\Infosys 6.0\new\models\unet_model.keras"
 
 CNN_THRESHOLD = 0.5
-UNET_THRESHOLD = 0.4      # 🔑 LOWERED (critical)
-MIN_AREA = 600            # 🔑 Reasonable
+UNET_THRESHOLD = 0.4
+MIN_AREA = 600
 
 st.set_page_config(page_title="AI-Driven Oil Spill Detection", layout="wide")
 
@@ -46,19 +46,33 @@ def speckle_like_filter(img_rgb):
     return gray
 
 # =================================================
-# POST-PROCESSING (CRITICAL FIX)
+# LAND–WATER MASK (ONLY ADDITION)
+# =================================================
+def land_water_mask(image_rgb):
+    """
+    Returns:
+    water_mask = 1 for water, 0 for land
+    """
+    gray = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2GRAY)
+
+    # Water is generally darker than land in SAR-like images
+    _, water = cv2.threshold(gray, 130, 255, cv2.THRESH_BINARY_INV)
+
+    kernel = np.ones((7, 7), np.uint8)
+    water = cv2.morphologyEx(water, cv2.MORPH_OPEN, kernel)
+    water = cv2.morphologyEx(water, cv2.MORPH_CLOSE, kernel)
+
+    return (water > 0).astype(np.uint8)
+
+# =================================================
+# POST-PROCESSING (UNCHANGED LOGIC)
 # =================================================
 def postprocess_mask(pred_prob, image_rgb):
-    """
-    Corrected logic:
-    - Invert mask (oil = dark)
-    - Restrict to water region
-    """
 
     # 1️⃣ Threshold
     raw_mask = (pred_prob > UNET_THRESHOLD).astype(np.uint8)
 
-    # 🔴 2️⃣ INVERT MASK (THIS WAS YOUR BIGGEST BUG)
+    # 2️⃣ Invert (AS YOU HAD IT)
     oil_mask = 1 - raw_mask
 
     # 3️⃣ Morphology
@@ -74,17 +88,16 @@ def postprocess_mask(pred_prob, image_rgb):
         if stats[i, cv2.CC_STAT_AREA] > MIN_AREA:
             clean_mask[labels == i] = 1
 
-    # 5️⃣ Water-only constraint
+    # 🔑 5️⃣ APPLY LAND–WATER MASK (ONLY CHANGE)
     img_resized = cv2.resize(image_rgb, (IMG_SIZE, IMG_SIZE))
-    gray = speckle_like_filter(img_resized)
+    water_mask = land_water_mask(img_resized)
 
-    water_region = gray > 100   # remove land, docks, roads
-    clean_mask = clean_mask & water_region
+    clean_mask = clean_mask & water_mask
 
     return clean_mask
 
 # =================================================
-# OVERLAY
+# OVERLAY (UNCHANGED)
 # =================================================
 def create_overlay(image_rgb, mask, alpha=0.4):
     image = cv2.resize(image_rgb, (IMG_SIZE, IMG_SIZE))
