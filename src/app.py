@@ -6,6 +6,8 @@ import numpy as np
 import cv2
 import tensorflow as tf
 from datetime import datetime
+import matplotlib.pyplot as plt
+import io
 
 # =================================================
 # CONFIG
@@ -26,30 +28,6 @@ st.set_page_config(
 )
 
 # =================================================
-# CUSTOM CSS (FROM UI CODE 1)
-# =================================================
-st.markdown("""
-<style>
-.main-header {
-    font-size: 2.6rem;
-    font-weight: bold;
-    color: #1f77b4;
-    text-align: center;
-}
-.sub-header {
-    text-align: center;
-    color: #666;
-    margin-bottom: 1.5rem;
-}
-.metric-card {
-    background-color: #f0f2f6;
-    padding: 1rem;
-    border-radius: 0.5rem;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# =================================================
 # LOAD MODELS
 # =================================================
 @st.cache_resource
@@ -68,28 +46,14 @@ def preprocess_image(img):
     img = img / 255.0
     return img.astype(np.float32)
 
-def speckle_like_filter(img_rgb):
-    gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
-    gray = cv2.medianBlur(gray, 5)
-    gray = cv2.GaussianBlur(gray, (5, 5), 0)
-    return gray
-
-# =================================================
-# LAND–WATER MASK (UNCHANGED)
-# =================================================
 def land_water_mask(image_rgb):
     gray = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2GRAY)
     _, water = cv2.threshold(gray, 130, 255, cv2.THRESH_BINARY_INV)
-
     kernel = np.ones((7, 7), np.uint8)
     water = cv2.morphologyEx(water, cv2.MORPH_OPEN, kernel)
     water = cv2.morphologyEx(water, cv2.MORPH_CLOSE, kernel)
-
     return (water > 0).astype(np.uint8)
 
-# =================================================
-# POST-PROCESSING (UNCHANGED)
-# =================================================
 def postprocess_mask(pred_prob, image_rgb):
     raw_mask = (pred_prob > UNET_THRESHOLD).astype(np.uint8)
     oil_mask = 1 - raw_mask
@@ -110,9 +74,6 @@ def postprocess_mask(pred_prob, image_rgb):
 
     return clean_mask & water_mask
 
-# =================================================
-# OVERLAY (UNCHANGED)
-# =================================================
 def create_overlay(image_rgb, mask, alpha=0.4):
     image = cv2.resize(image_rgb, (IMG_SIZE, IMG_SIZE))
     overlay = image.copy()
@@ -122,124 +83,135 @@ def create_overlay(image_rgb, mask, alpha=0.4):
 # =================================================
 # HEADER
 # =================================================
-st.markdown('<div class="main-header">🛢️ AI-Driven Oil Spill Detection System</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">CNN → Detection | U-Net → Segmentation</div>', unsafe_allow_html=True)
+st.markdown("<h1 style='text-align:center'>🛢️ AI-Driven Oil Spill Detection</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center;color:gray'>CNN → Detection | U-Net → Segmentation</p>", unsafe_allow_html=True)
 
-current_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S IST")
-st.caption(f"⏰ Analysis Timestamp: {current_time}")
+timestamp = datetime.now().strftime("%d-%m-%Y %H:%M:%S IST")
+st.caption(f"⏰ Analysis Timestamp: {timestamp}")
 
 st.divider()
 
 # =================================================
-# SIDEBAR
+# SIDEBAR (RETRACTABLE)
 # =================================================
 with st.sidebar:
-    st.header("⚙️ System Configuration")
-    st.metric("CNN Threshold", CNN_THRESHOLD)
-    st.metric("U-Net Threshold", UNET_THRESHOLD)
-    st.metric("Min Oil Area", MIN_AREA)
+    st.header("⚙️ Detection Parameters")
 
-    st.divider()
-    st.subheader("📘 About")
-    st.info("""
-    **Two-Stage Pipeline**
-    • CNN detects presence  
-    • U-Net segments spill  
+    st.markdown("**Classification Stage (CNN)**")
+    st.metric("Oil Detection Threshold", CNN_THRESHOLD)
 
-    **Enhancements**
-    • Land–Water masking  
-    • Morphological cleanup  
+    st.markdown("---")
+
+    st.markdown("**Segmentation Stage (U-Net)**")
+    st.metric("Segmentation Threshold", UNET_THRESHOLD)
+    st.metric("Minimum Oil Region Area", MIN_AREA)
+
+    st.markdown("---")
+
+    st.markdown("**Legend**")
+    st.markdown("""
+    - 🟥 **Red Overlay** → Detected Oil Spill  
+    - ⬜ **White** → Oil Region  
+    - ⬛ **Black** → Non-Oil / Clean Water  
     """)
+
 
 # =================================================
 # MAIN UI
 # =================================================
-st.header("📤 Upload Satellite Image")
-
-uploaded_file = st.file_uploader(
-    "Supported formats: JPG, PNG, JPEG",
-    type=["jpg", "png", "jpeg"]
-)
+uploaded_file = st.file_uploader("Upload SAR / Satellite Image", type=["jpg","png","jpeg"])
 
 if uploaded_file:
     bytes_data = np.frombuffer(uploaded_file.read(), np.uint8)
     img_bgr = cv2.imdecode(bytes_data, cv2.IMREAD_COLOR)
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
 
-    col_img1, col_img2, col_img3 = st.columns([1, 2, 1])
-    with col_img2:
-        st.image(img_rgb, caption="📸 Uploaded Image", use_column_width=True)
+    st.image(img_rgb, caption="Uploaded Image", use_column_width=True)
 
-    st.divider()
+    img_proc = preprocess_image(img_rgb)
+    img_batch = np.expand_dims(img_proc, axis=0)
 
-    col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 1])
-    with col_btn2:
-        analyze = st.button("🔍 Analyze Image", type="primary")
+    cnn_prob = cnn_model.predict(img_batch, verbose=0)[0][0]
 
-    if analyze:
-        with st.spinner("🔄 Analyzing image..."):
-            img_proc = preprocess_image(img_rgb)
-            img_batch = np.expand_dims(img_proc, axis=0)
+    if cnn_prob < CNN_THRESHOLD:
+        st.success("✅ No Oil Spill Detected")
+        st.stop()
 
-            cnn_prob = cnn_model.predict(img_batch, verbose=0)[0][0]
+    st.warning("🚨 Oil Spill Detected")
 
-            if cnn_prob < CNN_THRESHOLD:
-                st.success("✅ NO OIL SPILL DETECTED")
-                st.stop()
+    pred_prob = unet_model.predict(img_batch, verbose=0)[0].squeeze()
+    final_mask = postprocess_mask(pred_prob, img_rgb)
+    overlay = create_overlay(img_rgb, final_mask)
 
-            st.warning("🚨 OIL SPILL DETECTED")
+    oil_percent = (final_mask.sum() / final_mask.size) * 100
+    water_percent = 100 - oil_percent
 
-            pred_prob = unet_model.predict(img_batch, verbose=0)[0].squeeze()
-            final_mask = postprocess_mask(pred_prob, img_rgb)
-            overlay = create_overlay(img_rgb, final_mask)
+    # =================================================
+    # PIE CHART
+    # =================================================
+    fig, ax = plt.subplots(figsize=(4,4))
+    ax.pie(
+    [oil_percent, 100 - oil_percent],
+    labels=["Oil Spill Area", "Clean Water Area"],
+    autopct="%1.1f%%",
+    colors=["#ff4d4d", "#4CAF50"],
+    explode=(0.08, 0),
+    startangle=90,
+    textprops={"fontsize": 9}
+    )
+    ax.set_title("Oil Spill Area Distribution", fontsize=11)
+    ax.axis("equal")
 
-            oil_percent = (final_mask.sum() / final_mask.size) * 100
-            water_percent = 100 - oil_percent
 
-            # Metrics
-            st.subheader("📊 Detection Metrics")
-            c1, c2, c3, c4 = st.columns(4)
 
-            c1.metric("Status", "🔴 DETECTED")
-            c2.metric("CNN Confidence", f"{cnn_prob*100:.2f}%")
-            c3.metric("Oil Coverage", f"{oil_percent:.2f}%")
-            c4.metric("Clean Water", f"{water_percent:.2f}%")
+    st.pyplot(fig)
+    plt.close(fig)
 
-            st.divider()
 
-            # Visuals
-            st.subheader("🎨 Visual Analysis")
-            col1, col2, col3 = st.columns(3)
+    # =================================================
+    # VISUAL OUTPUT
+    # =================================================
+    col1, col2, col3 = st.columns(3)
 
-            with col1:
-                st.image(cv2.resize(img_rgb, (IMG_SIZE, IMG_SIZE)), caption="Original")
+    col1.image(img_rgb, caption="Original")
+    col2.image(final_mask * 255, clamp=True, caption="Mask (White=Oil)")
+    col3.image(overlay, caption="Overlay (Red=Oil)")
 
-            with col2:
-                st.image(final_mask * 255, clamp=True, caption="Segmentation Mask")
+    # =================================================
+    # CREATE DOWNLOAD IMAGE (MERGED)
+    # =================================================
+    overlay_bgr = cv2.cvtColor(overlay, cv2.COLOR_RGB2BGR)
 
-            with col3:
-                st.image(overlay, caption="Overlay")
+    cv2.putText(
+        overlay_bgr,
+        f"Timestamp: {timestamp}",
+        (10, 25),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (255,255,255),
+        2
+    )
 
-            st.divider()
+    cv2.putText(
+        overlay_bgr,
+        "White=Oil | Black=No Oil | Red=Oil Region",
+        (10, IMG_SIZE - 10),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.5,
+        (255,255,255),
+        1
+    )
 
-            # Download
-            overlay_bgr = cv2.cvtColor(overlay, cv2.COLOR_RGB2BGR)
-            _, buf = cv2.imencode(".png", overlay_bgr)
+    buf_overlay = io.BytesIO()
+    _, enc = cv2.imencode(".png", overlay_bgr)
+    buf_overlay.write(enc)
 
-            st.download_button(
-                "⬇️ Download Overlay Image",
-                buf.tobytes(),
-                "oil_spill_overlay.png",
-                mime="image/png"
-            )
+    st.download_button(
+        "⬇️ Download Overlay (with timestamp & legend)",
+        buf_overlay.getvalue(),
+        file_name="oil_spill_result.png",
+        mime="image/png"
+    )
 
-# # =================================================
-# # FOOTER
-# # =================================================
-# st.divider()
-# st.markdown("""
-# <div style='text-align:center; color:#666; padding:2rem'>
-# <strong>AI-Driven Oil Spill Detection System</strong><br>
-# CNN + U-Net | Streamlit Deployment
-# </div>
-# """, unsafe_allow_html=True)
+st.divider()
+st.caption("© AI-Driven Oil Spill Monitoring System")
