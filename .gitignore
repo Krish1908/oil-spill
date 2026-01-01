@@ -29,3 +29,6 @@ venv/
 
 be.py
 ui.py
+
+processed1/
+processed2/
