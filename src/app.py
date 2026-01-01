@@ -74,32 +74,32 @@ def postprocess_mask(pred_prob, image_rgb):
 
     return clean_mask & water_mask
 
-def create_overlay(image_rgb, mask, alpha=0.4):
+def create_overlay(image_rgb, mask, alpha=0.4, draw_outline=True, outline_color=(0,0,0)):
     image = cv2.resize(image_rgb, (IMG_SIZE, IMG_SIZE))
-
-    # Red overlay
     overlay = image.copy()
+
+    # Red oil overlay
     overlay[mask == 1] = [255, 0, 0]
     blended = cv2.addWeighted(image, 1 - alpha, overlay, alpha, 0)
 
-    # 🔑 Extract contours from oil mask
-    mask_uint8 = (mask * 255).astype(np.uint8)
-    contours, _ = cv2.findContours(
-        mask_uint8,
-        cv2.RETR_EXTERNAL,
-        cv2.CHAIN_APPROX_SIMPLE
-    )
+    if draw_outline:
+        # Find contours of oil regions
+        contours, _ = cv2.findContours(
+            (mask * 255).astype(np.uint8),
+            cv2.RETR_EXTERNAL,
+            cv2.CHAIN_APPROX_SIMPLE
+        )
 
-    # 🖤 Draw black outline
-    cv2.drawContours(
-        blended,
-        contours,
-        -1,
-        color=(0, 0, 0),   # black outline
-        thickness=2
-    )
+        cv2.drawContours(
+            blended,
+            contours,
+            -1,
+            outline_color,
+            thickness=2
+        )
 
     return blended
+
 
 
 # =================================================
@@ -125,12 +125,31 @@ with st.sidebar:
 
     st.divider()
 
-    st.subheader("Legend")
+    st.markdown("**Legend**")
     st.markdown("""
-    - ⬜ **White** → Oil Spill Region  
-    - ⬛ **Black** → Clean Water / No Oil  
-    - 🟥 **Red Overlay** → Detected Oil Spill  
+    - 🟥 **Red Fill** → Oil Spill Region  
+    - ⬜ **White Mask** → Oil (Segmentation Output)  
+    - ⬛ **Black Mask** → Clean Water / Non-Oil  
+    - ➖ **Outline** → Oil Boundary (toggleable)
     """)
+
+
+    # =================================================
+    # OUTLINE CONTROLS (UI ONLY)
+    # =================================================
+    st.markdown("---")
+    st.subheader("🖍 Overlay Boundary")
+
+    outline_enabled = st.toggle("Enable Oil Boundary Outline", value=True)
+
+    outline_color_choice = st.radio(
+        "Outline Color",
+        ["Black (Day SAR)", "White (Night SAR)"],
+        horizontal=True
+    )
+
+    OUTLINE_COLOR = (0, 0, 0) if outline_color_choice.startswith("Black") else (255, 255, 255)
+
 
 # =================================================
 # MAIN UI
@@ -160,7 +179,8 @@ if uploaded_file:
 
     pred_prob = unet_model.predict(img_batch, verbose=0)[0].squeeze()
     final_mask = postprocess_mask(pred_prob, img_rgb)
-    overlay = create_overlay(img_rgb, final_mask)
+    overlay = create_overlay( img_rgb, final_mask, draw_outline=outline_enabled, outline_color=OUTLINE_COLOR)
+
 
     oil_percent = (final_mask.sum() / final_mask.size) * 100
     water_percent = 100 - oil_percent
