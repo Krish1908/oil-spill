@@ -1,3 +1,6 @@
+# D:\Coding\Infosys 6.0\new\src\app.py
+# minor imprefections
+
 import streamlit as st
 import numpy as np
 import cv2
